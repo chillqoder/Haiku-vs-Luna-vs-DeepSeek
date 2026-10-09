@@ -1,0 +1,19 @@
+{
+  "name": "neon-fist",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Neon Fist - an original 2.5D side-scrolling beat 'em up built with Three.js and fully procedural assets.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node tests/smoke.test.js"
+  },
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}

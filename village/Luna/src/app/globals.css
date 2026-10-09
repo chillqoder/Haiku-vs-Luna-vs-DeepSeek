@@ -1,0 +1,94 @@
+:root {
+  color-scheme: dark;
+  --ink: #f4f2e9;
+  --muted: rgba(239, 242, 234, .68);
+  --gold: #e3c278;
+  --panel: rgba(23, 35, 40, .74);
+  --line: rgba(232, 231, 209, .18);
+}
+
+* { box-sizing: border-box; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+body { background: #b5d5e4; color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif; }
+button, a { font: inherit; }
+button { color: inherit; }
+
+.experience { position: relative; width: 100%; height: 100svh; min-height: 560px; overflow: hidden; isolation: isolate; background: #b6d7e8; }
+.canvas-root, .canvas-loading { position: absolute; inset: 0; width: 100%; height: 100%; }
+.canvas-root canvas { display: block; width: 100%; height: 100%; outline: none; }
+.canvas-loading { background: linear-gradient(180deg, #9ec9de 0%, #d7e5dd 58%, #9ab2a9 100%); }
+.canvas-error { position: absolute; inset: 50% auto auto 50%; width: min(380px, calc(100% - 40px)); padding: 17px 19px; transform: translate(-50%, -50%); border: 1px solid rgba(255,255,255,.25); border-radius: 4px; color: #fff8e9; background: rgba(27,43,45,.82); font-size: 13px; line-height: 1.6; text-align: center; }
+
+.brand-block, .top-right, .intro-card, .guide-card, .bottom-bar, .place-label { position: absolute; z-index: 2; }
+.brand-block { top: 30px; left: 38px; text-shadow: 0 1px 10px rgba(37, 52, 53, .22); }
+.brand-mark { display: inline-flex; align-items: center; gap: 10px; color: white; text-decoration: none; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; letter-spacing: .19em; font-weight: 500; }
+.brand-icon { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid rgba(255,255,255,.68); border-radius: 50%; color: #fff1c8; font-size: 19px; line-height: 1; }
+.brand-caption { margin: 7px 0 0 38px; color: rgba(255,255,255,.87); font-size: 11px; letter-spacing: .04em; }
+
+.top-right { top: 29px; right: 36px; display: flex; align-items: center; gap: 10px; }
+.live-pill { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border: 1px solid rgba(255,255,255,.4); border-radius: 99px; color: #fff; background: rgba(30,50,54,.16); backdrop-filter: blur(9px); font: 500 9px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .12em; }
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: #c5e994; box-shadow: 0 0 10px rgba(197,233,148,.9); }
+.icon-button { display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 1px solid rgba(255,255,255,.42); border-radius: 50%; color: white; background: rgba(30,50,54,.17); backdrop-filter: blur(9px); cursor: pointer; transition: background .2s, transform .2s; }
+.icon-button span { font-family: Georgia, serif; font-style: italic; font-size: 15px; }
+.icon-button:hover, .icon-button.selected { background: rgba(29,48,49,.48); transform: translateY(-1px); }
+
+.intro-card { left: 38px; top: 50%; width: 228px; padding: 19px 19px 17px; transform: translateY(-35%); border: 1px solid rgba(255,255,255,.19); border-radius: 4px; background: linear-gradient(135deg, rgba(32,48,51,.78), rgba(31,47,48,.48)); box-shadow: 0 14px 34px rgba(37,52,49,.12); backdrop-filter: blur(12px); }
+.eyebrow, .quick-stats span, .bottom-bar, .place-label, .guide-kicker { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.eyebrow { display: flex; align-items: center; gap: 7px; color: #e7d095; font-size: 8px; letter-spacing: .13em; white-space: nowrap; }
+.sun-symbol { font-size: 12px; }
+.intro-card h1 { margin: 9px 0 4px; color: #fff9eb; font: 600 32px Georgia, 'Times New Roman', serif; letter-spacing: -.025em; }
+.intro-card p { max-width: 176px; margin: 0; color: rgba(248,246,232,.77); font-size: 11px; line-height: 1.6; }
+.intro-divider { height: 1px; margin: 16px 0 13px; background: rgba(255,255,255,.22); }
+.quick-stats { display: grid; grid-template-columns: repeat(3, 1fr); }
+.quick-stats div { display: flex; flex-direction: column; gap: 4px; }
+.quick-stats strong { color: #fff7e3; font: 600 17px Georgia, 'Times New Roman', serif; }
+.quick-stats span { color: rgba(255,255,255,.65); font-size: 7px; letter-spacing: .08em; }
+
+.guide-card { top: 74px; right: 36px; width: 226px; padding: 15px 16px; border: 1px solid rgba(255,255,255,.24); border-radius: 4px; color: #f6f3e8; background: rgba(29,45,47,.79); box-shadow: 0 10px 28px rgba(31,45,45,.16); backdrop-filter: blur(12px); }
+.guide-kicker { color: #e6cb87; font-size: 8px; letter-spacing: .15em; }
+.guide-card p { margin: 9px 0 13px; color: rgba(246,243,232,.79); font-size: 11px; line-height: 1.55; }
+.guide-key { display: flex; align-items: center; gap: 8px; margin-top: 6px; color: rgba(246,243,232,.75); font-size: 10px; }
+.key-glyph { display: grid; place-items: center; width: 18px; height: 18px; border: 1px solid rgba(255,255,255,.25); border-radius: 3px; color: #e6cb87; }
+
+.place-label { display: flex; align-items: center; gap: 7px; color: rgba(255,255,245,.88); font-size: 8px; letter-spacing: .14em; text-shadow: 0 1px 5px rgba(38,54,46,.42); pointer-events: none; white-space: nowrap; }
+.label-line { display: block; width: 23px; height: 1px; background: rgba(255,255,245,.75); }
+.place-keep { top: 22%; left: 53%; }
+.place-pond { top: 57%; left: 62%; }
+.place-wood { top: 67%; right: 17%; }
+
+.bottom-bar { right: 0; bottom: 0; left: 0; display: flex; align-items: center; justify-content: space-between; min-height: 61px; padding: 0 38px; border-top: 1px solid rgba(255,255,255,.22); background: linear-gradient(0deg, rgba(25,43,42,.78), rgba(25,43,42,.28)); backdrop-filter: blur(11px); }
+.bottom-note, .camera-hint, .scene-controls, .control-button { display: flex; align-items: center; }
+.bottom-note { gap: 9px; color: rgba(255,255,244,.84); font-size: 10px; }
+.weather-icon { color: #f1d28a; font-size: 16px; }
+.bottom-note i { padding: 0 4px; color: #e6cc8a; font-style: normal; }
+.camera-hint { gap: 8px; color: rgba(255,255,244,.68); font-size: 8px; letter-spacing: .11em; }
+.mouse-glyph { color: #f0d38d; font-size: 15px; }
+.scene-controls { gap: 13px; }
+.control-button { gap: 8px; padding: 8px 0; border: 0; color: rgba(255,255,244,.83); background: transparent; cursor: pointer; font: 500 8px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .11em; transition: color .15s; }
+.control-button:hover { color: #f0d38d; }
+.reset-icon { color: #f0d38d; font-size: 16px; line-height: 1; }
+.pause-icon { color: #f0d38d; font-size: 11px; line-height: 1; }
+.control-separator { width: 1px; height: 20px; background: rgba(255,255,255,.23); }
+
+@media (max-width: 760px) {
+  .experience { min-height: 480px; }
+  .brand-block { top: 18px; left: 17px; }
+  .top-right { top: 16px; right: 16px; }
+  .intro-card { left: 16px; top: auto; bottom: 79px; width: min(210px, 57vw); padding: 14px; transform: none; }
+  .intro-card h1 { font-size: 27px; }
+  .intro-card p { font-size: 10px; }
+  .place-label { display: none; }
+  .bottom-bar { min-height: 58px; padding: 0 15px; }
+  .bottom-note { display: none; }
+  .camera-hint { position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; }
+  .scene-controls { margin-left: auto; gap: 10px; }
+  .control-button { gap: 5px; font-size: 7px; }
+  .guide-card { top: 61px; right: 15px; width: 218px; }
+}
+
+@media (max-width: 390px) {
+  .brand-caption { font-size: 9px; }
+  .live-pill { padding: 0 9px; font-size: 8px; }
+  .camera-hint { display: none; }
+  .intro-card { bottom: 72px; }
+}

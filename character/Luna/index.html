@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#080a18" />
+  <title>Vesper — The Starbound Mage</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f4f1ff;
+      --muted: #aaa8c6;
+      --cyan: #63f4ef;
+      --violet: #a38bff;
+    }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+    body {
+      background: #080a18;
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    #scene { position: fixed; inset: 0; display: block; width: 100%; height: 100%; }
+    .vignette {
+      position: fixed; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse at 68% 43%, transparent 20%, rgba(4, 5, 17, .18) 68%, rgba(4, 5, 17, .7) 130%);
+    }
+    .panel {
+      position: fixed; z-index: 2; top: 0; bottom: 0; left: 0;
+      width: min(420px, 36vw); padding: clamp(28px, 5vh, 58px) 38px;
+      display: flex; flex-direction: column; justify-content: center;
+      background: linear-gradient(110deg, rgba(8, 10, 24, .98), rgba(10, 12, 29, .91) 80%, rgba(10, 12, 29, 0));
+    }
+    .brand { display: flex; align-items: center; gap: 11px; margin-bottom: clamp(42px, 8vh, 82px); }
+    .brand-mark {
+      display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid rgba(99,244,239,.52);
+      border-radius: 50%; color: var(--cyan); font-size: 17px; box-shadow: 0 0 24px rgba(99,244,239,.18), inset 0 0 16px rgba(99,244,239,.08);
+    }
+    .brand-name { font-size: 11px; font-weight: 700; letter-spacing: .23em; text-transform: uppercase; color: #d7d5ed; }
+    .eyebrow { margin: 0 0 17px; color: var(--cyan); font-size: 10px; font-weight: 700; letter-spacing: .24em; text-transform: uppercase; }
+    h1 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-weight: 400; font-size: clamp(48px, 5.4vw, 72px); line-height: .95; letter-spacing: -.055em; }
+    h1 span { display: block; color: #b3a2ff; font-style: italic; }
+    .description { max-width: 280px; margin: 23px 0 0; color: var(--muted); font-size: 14px; line-height: 1.75; }
+    .divider { width: 42px; height: 1px; margin: 31px 0 24px; background: linear-gradient(90deg, var(--cyan), transparent); }
+    .spell-button {
+      display: flex; align-items: center; justify-content: space-between; width: 220px; min-height: 54px;
+      padding: 0 17px 0 20px; border: 1px solid rgba(99,244,239,.55); border-radius: 3px;
+      background: linear-gradient(110deg, rgba(49,132,151,.18), rgba(109,80,180,.17));
+      color: var(--ink); cursor: pointer; font: inherit; font-size: 10px; font-weight: 700; letter-spacing: .17em;
+      text-transform: uppercase; transition: background .2s, border-color .2s, transform .2s, box-shadow .2s;
+    }
+    .spell-button:hover { transform: translateY(-2px); border-color: var(--cyan); background: rgba(83,220,222,.18); box-shadow: 0 8px 32px rgba(49,219,226,.14); }
+    .spell-button:active { transform: translateY(0); }
+    .spell-button:focus-visible { outline: 2px solid white; outline-offset: 4px; }
+    .button-icon { color: var(--cyan); font-size: 18px; font-weight: 400; }
+    .hint { margin: 14px 0 0; color: #75738f; font-size: 11px; letter-spacing: .03em; }
+    .hint kbd { padding: 3px 6px; border: 1px solid #393851; border-radius: 3px; color: #b8b5d2; font: inherit; }
+    .footer { position: absolute; bottom: 28px; left: 38px; color: #65647e; font-size: 9px; letter-spacing: .18em; text-transform: uppercase; }
+    .scene-label {
+      position: fixed; z-index: 1; right: 34px; bottom: 30px; display: flex; align-items: center; gap: 10px;
+      color: rgba(221,223,255,.65); font-size: 9px; letter-spacing: .2em; text-transform: uppercase;
+    }
+    .scene-label::before { content: ""; width: 30px; height: 1px; background: var(--cyan); box-shadow: 0 0 9px var(--cyan); }
+    .status { position: fixed; z-index: 2; top: 30px; right: 34px; display: flex; align-items: center; gap: 9px; color: #aaa8c6; font-size: 9px; letter-spacing: .17em; text-transform: uppercase; }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+    .status.is-casting .status-dot { background: #be9fff; box-shadow: 0 0 12px #be9fff; }
+    .no-webgl { position: fixed; z-index: 5; inset: auto 20px 20px; padding: 14px; border: 1px solid #8a658e; background: #171329; color: white; font-size: 13px; text-align: center; }
+    @media (max-width: 700px) {
+      .panel {
+        top: auto; bottom: 0; width: 100%; min-height: 260px; padding: 22px 24px 30px;
+        justify-content: flex-start; background: linear-gradient(0deg, rgba(8,10,24,.98) 70%, rgba(8,10,24,.88) 88%, transparent);
+      }
+      .brand { margin-bottom: 18px; }
+      .brand-mark { width: 28px; height: 28px; font-size: 14px; }
+      .eyebrow { margin-bottom: 8px; font-size: 9px; }
+      h1 { font-size: 43px; line-height: .9; }
+      .description { margin-top: 11px; max-width: 340px; font-size: 12px; line-height: 1.5; }
+      .divider { display: none; }
+      .spell-button { position: absolute; right: 24px; bottom: 31px; width: 152px; min-height: 48px; padding: 0 12px 0 14px; font-size: 9px; }
+      .hint { margin-top: 13px; font-size: 9px; }
+      .footer { display: none; }
+      .status { top: 20px; right: 18px; font-size: 8px; }
+      .scene-label { right: 20px; bottom: 274px; font-size: 8px; }
+    }
+    @media (max-width: 390px) {
+      .description { max-width: 215px; }
+      .spell-button { width: 137px; }
+      .scene-label { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; } }
+  </style>
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js" } }
+  </script>
+</head>
+<body>
+  <canvas id="scene" aria-label="A low-poly mage standing in a softly glowing magical chamber"></canvas>
+  <div class="vignette" aria-hidden="true"></div>
+  <main class="panel">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">✦</span><span class="brand-name">The Astral Archive</span></div>
+    <p class="eyebrow">Keeper of the Blue Flame</p>
+    <h1>Vesper <span>Starbound</span></h1>
+    <p class="description">A wanderer between worlds, listening for the old songs hidden in the night sky.</p>
+    <div class="divider" aria-hidden="true"></div>
+    <button class="spell-button" id="cast" type="button"><span>Cast a spell</span><span class="button-icon" aria-hidden="true">✧</span></button>
+    <p class="hint">or press <kbd>SPACE</kbd> to channel</p>
+    <div class="footer">Field notes · No. 07</div>
+  </main>
+  <div class="status" id="status"><span class="status-dot"></span><span id="statusText">Quietly observing</span></div>
+  <div class="scene-label">The moonlit crossing</div>
+  <script type="module">
+    import * as THREE from 'three';
+
+    const canvas = document.querySelector('#scene');
+    const status = document.querySelector('#status');
+    const statusText = document.querySelector('#statusText');
+    const castButton = document.querySelector('#cast');
+    let renderer;
+
+    try {
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+    } catch (error) {
+      const note = document.createElement('div');
+      note.className = 'no-webgl';
+      note.textContent = 'This scene needs WebGL enabled in your browser to open.';
+      document.body.append(note);
+      throw error;
+    }
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color('#080a18');
+    scene.fog = new THREE.FogExp2('#080a18', 0.035);
+    const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 80);
+    camera.position.set(5.2, 4.6, 11.8);
+    camera.lookAt(0.15, 2.05, 0);
+
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.22;
+
+    scene.add(new THREE.HemisphereLight('#9dbbff', '#201733', 2.0));
+    const keyLight = new THREE.DirectionalLight('#e5dcff', 3.5);
+    keyLight.position.set(-4, 8, 6);
+    scene.add(keyLight);
+    const rimLight = new THREE.PointLight('#835bff', 18, 12, 2);
+    rimLight.position.set(3.8, 4.2, -2.5);
+    scene.add(rimLight);
+    const floorGlow = new THREE.PointLight('#27dfe1', 9, 8, 2);
+    floorGlow.position.set(1, 1, 2);
+    scene.add(floorGlow);
+
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(200, 200),
+      new THREE.MeshStandardMaterial({ color: '#111326', roughness: 0.82, metalness: 0.18 })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -0.035;
+    scene.add(floor);
+
+    const stage = new THREE.Group();
+    stage.position.x = 1.35;
+    scene.add(stage);
+
+    const makeMaterial = (color, roughness = 0.72, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness, flatShading: true, ...extra });
+    const robeMat = makeMaterial('#39255f');
+    const robeLightMat = makeMaterial('#51377e');
+    const deepMat = makeMaterial('#201631');
+    const trimMat = makeMaterial('#b694ff', 0.42, { metalness: 0.48, emissive: '#332052', emissiveIntensity: 0.22 });
+    const cyanMat = makeMaterial('#4ee8e3', 0.35, { metalness: 0.3, emissive: '#13aeb7', emissiveIntensity: 1.1 });
+    const skinMat = makeMaterial('#bd8b82');
+    const goldMat = makeMaterial('#d9ad69', 0.4, { metalness: 0.62 });
+
+    function mesh(geometry, material, parent, position = [0, 0, 0], scale = null) {
+      const object = new THREE.Mesh(geometry, material);
+      object.position.set(...position);
+      if (scale) object.scale.set(...scale);
+      parent.add(object);
+      return object;
+    }
+    function link(parent, start, end, radiusTop, radiusBottom, material, segments = 7) {
+      const a = new THREE.Vector3(...start), b = new THREE.Vector3(...end);
+      const delta = new THREE.Vector3().subVectors(b, a);
+      const piece = mesh(new THREE.CylinderGeometry(radiusTop, radiusBottom, delta.length(), segments, 1), material, parent);
+      piece.position.copy(a).add(b).multiplyScalar(0.5);
+      piece.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), delta.normalize());
+      return piece;
+    }
+
+    const mage = new THREE.Group();
+    stage.add(mage);
+    const torso = new THREE.Group();
+    mage.add(torso);
+
+    // Eight-sided robe panels keep the silhouette deliberately faceted.
+    mesh(new THREE.CylinderGeometry(0.48, 0.94, 2.16, 8, 1), robeMat, torso, [0, 1.2, 0]);
+    mesh(new THREE.CylinderGeometry(0.53, 0.98, 0.16, 8, 1), robeLightMat, torso, [0, 0.24, 0]);
+    mesh(new THREE.TorusGeometry(0.86, 0.035, 5, 8), trimMat, torso, [0, 0.34, 0]).rotation.x = Math.PI / 2;
+    mesh(new THREE.CylinderGeometry(0.5, 0.53, 0.14, 8), goldMat, torso, [0, 1.2, 0]);
+    mesh(new THREE.BoxGeometry(0.18, 0.17, 0.12), cyanMat, torso, [0, 1.19, 0.53]);
+    // Sewn-on angular panels break up the robe's broad surface.
+    for (let i = 0; i < 8; i++) {
+      const angle = i * Math.PI / 4;
+      const panel = mesh(new THREE.ConeGeometry(0.42, 1.72, 3, 1), i % 2 ? robeLightMat : deepMat, torso);
+      panel.position.set(Math.sin(angle) * 0.56, 0.91, Math.cos(angle) * 0.56);
+      panel.rotation.y = angle;
+      panel.rotation.z = Math.PI;
+      panel.scale.set(0.58, 1, 0.12);
+    }
+
+    const head = new THREE.Group();
+    mage.add(head);
+    mesh(new THREE.SphereGeometry(0.38, 8, 6), skinMat, head, [0, 2.66, 0.02], [0.88, 1, 0.82]);
+    mesh(new THREE.SphereGeometry(0.43, 8, 6), deepMat, head, [0, 2.7, -0.04], [1.02, 1.02, 0.94]);
+    // The face sits in front of the hood and under the hat brim.
+    mesh(new THREE.SphereGeometry(0.32, 8, 6), skinMat, head, [0, 2.69, 0.22], [0.92, 0.88, 0.64]);
+    for (const x of [-0.12, 0.12]) {
+      mesh(new THREE.SphereGeometry(0.035, 6, 4), cyanMat, head, [x, 2.72, 0.42], [0.75, 0.8, 0.5]);
+    }
+    mesh(new THREE.CylinderGeometry(0.78, 0.78, 0.12, 9), robeLightMat, head, [0, 3.05, 0]);
+    const hat = new THREE.Group();
+    head.add(hat);
+    mesh(new THREE.ConeGeometry(0.61, 1.35, 8, 1), robeMat, hat, [0, 3.75, -0.02]).rotation.z = -0.13;
+    mesh(new THREE.TorusGeometry(0.49, 0.045, 5, 8), cyanMat, hat, [0, 3.25, 0]).rotation.x = Math.PI / 2;
+    // A small star pin catches the key light at the front of the brim.
+    mesh(new THREE.OctahedronGeometry(0.09, 0), goldMat, hat, [0.36, 3.08, 0.47]).rotation.z = Math.PI / 4;
+
+    const staff = new THREE.Group();
+    mage.add(staff);
+    staff.position.set(0.94, 1.9, -0.02);
+    staff.rotation.z = -0.08;
+    mesh(new THREE.CylinderGeometry(0.055, 0.085, 2.72, 6), makeMaterial('#79533f', 0.84), staff, [0, 0.67, 0]);
+    mesh(new THREE.ConeGeometry(0.1, 0.22, 6), goldMat, staff, [0, -0.64, 0]);
+    const crystal = mesh(new THREE.IcosahedronGeometry(0.27, 0), cyanMat, staff, [0, 2.16, 0]);
+    crystal.rotation.set(0.18, 0.25, 0.1);
+    const crystalLight = new THREE.PointLight('#48f6ed', 2.8, 4, 2);
+    crystalLight.position.set(0, 2.2, 0.05);
+    staff.add(crystalLight);
+    for (const angle of [0, Math.PI * 2 / 3, Math.PI * 4 / 3]) {
+      const prong = mesh(new THREE.ConeGeometry(0.055, 0.36, 5), goldMat, staff, [Math.cos(angle) * 0.19, 1.99, Math.sin(angle) * 0.19]);
+      prong.rotation.z = Math.cos(angle) * 0.58;
+      prong.rotation.x = Math.sin(angle) * 0.58;
+    }
+    // Sleeves, hands, and cuffs are separate pieces so the pose reads clearly.
+    link(mage, [0.32, 2.06, 0], [0.82, 1.91, 0.03], 0.24, 0.17, robeLightMat);
+    mesh(new THREE.TorusGeometry(0.18, 0.035, 5, 8), goldMat, mage, [0.79, 1.93, 0.03]).rotation.z = Math.PI / 2;
+    const staffHand = mesh(new THREE.SphereGeometry(0.15, 7, 5), skinMat, mage, [0.86, 1.91, 0.05]);
+    staffHand.scale.set(0.9, 0.88, 0.82);
+    link(mage, [-0.34, 2.02, 0.02], [-0.84, 2.33, 0.08], 0.23, 0.16, robeLightMat);
+    mesh(new THREE.TorusGeometry(0.17, 0.035, 5, 8), goldMat, mage, [-0.81, 2.3, 0.08]).rotation.z = -0.6;
+    const castingHand = new THREE.Group();
+    castingHand.position.set(-0.91, 2.38, 0.11);
+    mage.add(castingHand);
+    mesh(new THREE.SphereGeometry(0.14, 7, 5), skinMat, castingHand);
+    for (let i = 0; i < 3; i++) {
+      const finger = mesh(new THREE.ConeGeometry(0.045, 0.22, 5), skinMat, castingHand, [-0.13 + i * 0.12, 0.13, 0.02]);
+      finger.rotation.z = -0.38 + i * 0.2;
+    }
+
+    // A restrained circular sigil anchors the figure to the floor.
+    const sigil = new THREE.Group();
+    sigil.position.y = 0.012;
+    stage.add(sigil);
+    const sigilMat = new THREE.MeshBasicMaterial({ color: '#38d7df', transparent: true, opacity: 0.33, side: THREE.DoubleSide });
+    const ring = mesh(new THREE.RingGeometry(1.16, 1.19, 48), sigilMat, sigil);
+    ring.rotation.x = -Math.PI / 2;
+    const innerRing = mesh(new THREE.RingGeometry(1.29, 1.305, 48), new THREE.MeshBasicMaterial({ color: '#9375ed', transparent: true, opacity: 0.3, side: THREE.DoubleSide }), sigil);
+    innerRing.rotation.x = -Math.PI / 2;
+    for (let i = 0; i < 12; i++) {
+      const mark = mesh(new THREE.BoxGeometry(0.025, 0.004, 0.12), sigilMat, sigil, [Math.sin(i * Math.PI / 6) * 1.23, 0.006, Math.cos(i * Math.PI / 6) * 1.23]);
+      mark.rotation.y = i * Math.PI / 6;
+    }
+
+    // Sparse distant motes give the dark stage a little depth.
+    const starsGeometry = new THREE.BufferGeometry();
+    const starPositions = new Float32Array(180 * 3);
+    for (let i = 0; i < 180; i++) {
+      starPositions[i * 3] = (Math.random() - 0.5) * 24;
+      starPositions[i * 3 + 1] = Math.random() * 10 + 0.7;
+      starPositions[i * 3 + 2] = -4 - Math.random() * 12;
+    }
+    starsGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    const stars = new THREE.Points(starsGeometry, new THREE.PointsMaterial({ color: '#a89bdb', size: 0.035, transparent: true, opacity: 0.72, sizeAttenuation: true }));
+    scene.add(stars);
+
+    // The spell particles share one point cloud and recycle their buffers.
+    const particleCount = 260;
+    const particlePositions = new Float32Array(particleCount * 3);
+    const particleColors = new Float32Array(particleCount * 3);
+    const particleSizes = new Float32Array(particleCount);
+    const particleAlphas = new Float32Array(particleCount);
+    const particles = Array.from({ length: particleCount }, () => ({ life: 0, maxLife: 1, vx: 0, vy: 0, vz: 0 }));
+    const particleGeometry = new THREE.BufferGeometry();
+    particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3).setUsage(THREE.DynamicDrawUsage));
+    particleGeometry.setAttribute('aColor', new THREE.BufferAttribute(particleColors, 3).setUsage(THREE.DynamicDrawUsage));
+    particleGeometry.setAttribute('aSize', new THREE.BufferAttribute(particleSizes, 1).setUsage(THREE.DynamicDrawUsage));
+    particleGeometry.setAttribute('aAlpha', new THREE.BufferAttribute(particleAlphas, 1).setUsage(THREE.DynamicDrawUsage));
+    const particleMaterial = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      vertexShader: `attribute vec3 aColor; attribute float aSize; attribute float aAlpha; varying vec3 vColor; varying float vAlpha; void main(){ vColor=aColor; vAlpha=aAlpha; vec4 mv=modelViewMatrix*vec4(position,1.0); gl_PointSize=aSize*(300.0/-mv.z); gl_Position=projectionMatrix*mv; }`,
+      fragmentShader: `varying vec3 vColor; varying float vAlpha; void main(){ float d=length(gl_PointCoord-vec2(0.5)); if(d>0.5) discard; float glow=1.0-smoothstep(0.12,0.5,d); gl_FragColor=vec4(vColor, vAlpha*glow); }`
+    });
+    const particleCloud = new THREE.Points(particleGeometry, particleMaterial);
+    scene.add(particleCloud);
+
+    const spell = new THREE.Group();
+    spell.position.copy(castingHand.position);
+    mage.add(spell);
+    const spellOrb = mesh(new THREE.IcosahedronGeometry(0.13, 1), new THREE.MeshBasicMaterial({ color: '#b2ffff' }), spell, [0, 0.16, 0]);
+    const spellAura = new THREE.PointLight('#51f8ed', 0, 3.6, 2);
+    spellAura.position.set(0, 0.16, 0.12);
+    spell.add(spellAura);
+    const spellRingA = mesh(new THREE.TorusGeometry(0.3, 0.012, 4, 32), new THREE.MeshBasicMaterial({ color: '#59f5ef', transparent: true, opacity: 0.9 }), spell, [0, 0.16, 0]);
+    const spellRingB = mesh(new THREE.TorusGeometry(0.39, 0.008, 4, 32), new THREE.MeshBasicMaterial({ color: '#aa8dff', transparent: true, opacity: 0.72 }), spell, [0, 0.16, 0]);
+    spellRingB.rotation.x = Math.PI / 2;
+    spell.visible = false;
+
+    let particleCursor = 0;
+    function emitParticles(count = 22) {
+      const origin = new THREE.Vector3();
+      spell.getWorldPosition(origin);
+      for (let n = 0; n < count; n++) {
+        const i = particleCursor++ % particleCount;
+        const p = particles[i];
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 0.5 + Math.random() * 1.55;
+        p.life = p.maxLife = 0.45 + Math.random() * 0.9;
+        p.vx = Math.cos(angle) * speed * 0.66;
+        p.vy = (Math.random() * 1.6 + 0.35) * speed;
+        p.vz = Math.sin(angle) * speed * 0.66;
+        particlePositions[i * 3] = origin.x + (Math.random() - 0.5) * 0.12;
+        particlePositions[i * 3 + 1] = origin.y + (Math.random() - 0.5) * 0.12;
+        particlePositions[i * 3 + 2] = origin.z + (Math.random() - 0.5) * 0.12;
+        const violet = Math.random() > 0.72;
+        particleColors[i * 3] = violet ? 0.68 : 0.27;
+        particleColors[i * 3 + 1] = violet ? 0.48 : 0.95;
+        particleColors[i * 3 + 2] = 1;
+        particleSizes[i] = 0.055 + Math.random() * 0.085;
+        particleAlphas[i] = 1;
+      }
+      particleGeometry.attributes.position.needsUpdate = true;
+      particleGeometry.attributes.aColor.needsUpdate = true;
+      particleGeometry.attributes.aSize.needsUpdate = true;
+      particleGeometry.attributes.aAlpha.needsUpdate = true;
+    }
+
+    let castTime = 0;
+    let emissionTime = 0;
+    function castSpell() {
+      castTime = 1.65;
+      emissionTime = 0;
+      spell.visible = true;
+      emitParticles(62);
+      status.classList.add('is-casting');
+      statusText.textContent = 'Channeling starlight';
+    }
+    castButton.addEventListener('click', castSpell);
+    window.addEventListener('keydown', (event) => {
+      if (event.code === 'Space' && !event.repeat && !['INPUT', 'TEXTAREA', 'BUTTON'].includes(document.activeElement?.tagName)) {
+        event.preventDefault();
+        castSpell();
+      }
+    });
+
+    const clock = new THREE.Clock();
+    let elapsed = 0;
+    function updateParticles(delta) {
+      let dirty = false;
+      for (let i = 0; i < particleCount; i++) {
+        const p = particles[i];
+        if (p.life <= 0) continue;
+        p.life -= delta;
+        const f = Math.max(0, p.life / p.maxLife);
+        particlePositions[i * 3] += p.vx * delta;
+        particlePositions[i * 3 + 1] += p.vy * delta;
+        particlePositions[i * 3 + 2] += p.vz * delta;
+        p.vy -= 1.15 * delta;
+        particleAlphas[i] = f;
+        particleSizes[i] *= 0.999;
+        if (p.life <= 0) particleAlphas[i] = 0;
+        dirty = true;
+      }
+      if (dirty) {
+        particleGeometry.attributes.position.needsUpdate = true;
+        particleGeometry.attributes.aAlpha.needsUpdate = true;
+        particleGeometry.attributes.aSize.needsUpdate = true;
+      }
+    }
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = Math.min(clock.getDelta(), 0.04);
+      elapsed += delta;
+      mage.position.y = Math.sin(elapsed * 1.55) * 0.035;
+      torso.scale.y = 1 + Math.sin(elapsed * 1.55) * 0.012;
+      hat.rotation.z = -0.018 + Math.sin(elapsed * 0.8) * 0.018;
+      staff.rotation.z = -0.08 + Math.sin(elapsed * 1.25) * 0.035;
+      staff.rotation.x = Math.sin(elapsed * 0.9) * 0.025;
+      crystal.rotation.y += delta * 0.75;
+      sigil.rotation.y = elapsed * 0.035;
+      stars.rotation.y = Math.sin(elapsed * 0.04) * 0.025;
+      if (castTime > 0) {
+        castTime -= delta;
+        emissionTime -= delta;
+        if (emissionTime <= 0) { emitParticles(24); emissionTime = 0.085; }
+        const pulse = 1 + Math.sin(elapsed * 17) * 0.09;
+        spellOrb.scale.setScalar(pulse);
+        spellRingA.rotation.z += delta * 1.4;
+        spellRingB.rotation.y += delta * 1.8;
+        spellAura.intensity = 3.2 + Math.sin(elapsed * 16) * 1.2;
+        if (castTime <= 0) {
+          spell.visible = false;
+          spellAura.intensity = 0;
+          status.classList.remove('is-casting');
+          statusText.textContent = 'Quietly observing';
+        }
+      }
+      updateParticles(delta);
+      renderer.render(scene, camera);
+    }
+
+    function resize() {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      renderer.setSize(width, height, false);
+      camera.aspect = width / height;
+      camera.fov = width < 700 ? 39 : 34;
+      camera.position.set(width < 700 ? 4.2 : 5.2, width < 700 ? 4.25 : 4.6, width < 700 ? 12.8 : 11.8);
+      camera.lookAt(width < 700 ? 0.1 : 0.15, width < 700 ? 2.45 : 2.05, 0);
+      camera.updateProjectionMatrix();
+    }
+    window.addEventListener('resize', resize);
+    resize();
+    animate();
+  </script>
+</body>
+</html>

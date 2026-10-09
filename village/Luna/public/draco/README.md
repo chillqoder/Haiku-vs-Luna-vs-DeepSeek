@@ -1,0 +1,1 @@
+Place `draco_wasm_wrapper.js`, `draco_decoder.wasm`, and (for non-WASM fallback) `draco_decoder.js` here if you add Draco-compressed GLTF assets. `AssetLoader` points `DRACOLoader` at `/draco/`. No decoder is needed for the procedural scene or non-Draco GLTF files.

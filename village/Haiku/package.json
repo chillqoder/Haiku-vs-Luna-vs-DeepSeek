@@ -1,0 +1,28 @@
+{
+  "name": "village-diorama",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Interactive low-poly diorama of a medieval village on a floating sky island",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "assets:characters": "tsx scripts/build-characters.ts"
+  },
+  "dependencies": {
+    "next": "^16.4.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/three": "^0.186.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
+  }
+}

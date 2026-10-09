@@ -1,0 +1,2 @@
+Create a single-file HTML using Three.js that renders a low-poly 3D animated mage character. The character should be built procedurally using basic geometric primitives (boxes, spheres, cones). The mage should have a pointed hat, a flowing robe, and a staff. Implement a smooth 'idle' animation (breathing and slight staff movement) and a 'magic casting' effect using a particle system. Use a stylized low-poly aesthetic with a vibrant color palette (e.g., deep purples and glowing cyans). Ensure the code includes a basic lighting setup, a floor, and responsive window resizing
+

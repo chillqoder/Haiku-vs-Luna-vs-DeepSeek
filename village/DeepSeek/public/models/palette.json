@@ -1,0 +1,30 @@
+{
+  "name": "skyhold-village-palette",
+  "version": 1,
+  "note": "Documentation mirror of src/diorama/world/palette.ts. The TypeScript module is authoritative at runtime; this file is published for asset authors.",
+  "colors": {
+    "sky": "#b6dcff",
+    "fog": "#cfe6fb",
+    "grass": "#6cc24a",
+    "dirt": "#8a7a5e",
+    "rock": "#6f6a63",
+    "rockDark": "#5d5952",
+    "path": "#d9c98f",
+    "plaza": "#c8c1b2",
+    "water": "#3fa7dd",
+    "waterDeep": "#2f86b6",
+    "stone": "#9aa0a6",
+    "stoneDark": "#7f858c",
+    "stoneLight": "#b9c2cc",
+    "wood": "#8a6240",
+    "woodDark": "#6b4a2f",
+    "woodLight": "#c9a05e",
+    "plaster": "#efe3c8",
+    "roofSlate": "#7d6b5f",
+    "roofStraw": "#c9a55a",
+    "roofRed": "#b5533c",
+    "skin": "#f0c8a0",
+    "steel": "#c9ced6",
+    "gold": "#f2c14e"
+  }
+}

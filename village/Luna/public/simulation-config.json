@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "island": {
+    "center": [0, 0, 0],
+    "topRadius": [8.5, 6.6]
+  },
+  "characters": [
+    {
+      "id": "king-alden",
+      "name": "King Alden",
+      "kind": "king",
+      "position": [0.35, 1.32, 3.5],
+      "facing": 3.1415926536,
+      "color": "#9f4770",
+      "accent": "#efc84c",
+      "clip": "royal-survey"
+    },
+    {
+      "id": "guard-north",
+      "name": "North guard",
+      "kind": "guard",
+      "position": [-0.75, 0.25, 3.15],
+      "patrol": [[-0.95, 0.25, 2.75], [-0.95, 0.25, 4.05]],
+      "color": "#667d91",
+      "accent": "#b9c7cc",
+      "clip": "gate-patrol"
+    },
+    {
+      "id": "guard-east",
+      "name": "East guard",
+      "kind": "guard",
+      "position": [1.45, 0.25, 3.15],
+      "patrol": [[1.45, 0.25, 4.05], [1.45, 0.25, 2.75]],
+      "color": "#5c7187",
+      "accent": "#d5d9d1",
+      "clip": "gate-patrol",
+      "startOffset": 6
+    },
+    {
+      "id": "lumberjack-oren",
+      "name": "Oren the woodcutter",
+      "kind": "lumberjack",
+      "position": [4.45, 0.25, 1.6],
+      "facing": -0.65,
+      "color": "#8c6345",
+      "accent": "#c34f34",
+      "clip": "chop-wood"
+    },
+    {
+      "id": "cook-mara",
+      "name": "Mara the cook",
+      "kind": "cook",
+      "position": [-1.7, 0.25, -2.55],
+      "facing": 0.55,
+      "color": "#617e50",
+      "accent": "#dfc486",
+      "clip": "stir-taste-refill"
+    },
+    {
+      "id": "fisherman-elliot",
+      "name": "Elliot the fisherman",
+      "kind": "fisherman",
+      "position": [-3.55, 0.45, 0.55],
+      "facing": -1.5707963268,
+      "color": "#6a8a88",
+      "accent": "#d09b55",
+      "clip": "cast-wait-reel"
+    },
+    {
+      "id": "child-1",
+      "name": "Pip",
+      "kind": "child",
+      "position": [0.3, 0.25, -0.2],
+      "color": "#d38345",
+      "accent": "#4f7385",
+      "clip": "tag-run"
+    },
+    {
+      "id": "child-2",
+      "name": "Nell",
+      "kind": "child",
+      "position": [-0.3, 0.25, -1.5],
+      "color": "#63885d",
+      "accent": "#d58845",
+      "clip": "tag-run",
+      "startOffset": 0.8
+    },
+    {
+      "id": "ambient-1",
+      "name": "Village baker",
+      "kind": "ambient",
+      "position": [2.3, 0.25, -1.8],
+      "facing": 0.8,
+      "color": "#966449",
+      "accent": "#d0a66e",
+      "clip": "wander-idle",
+      "startOffset": 1.5
+    },
+    {
+      "id": "ambient-2",
+      "name": "Village gardener",
+      "kind": "ambient",
+      "position": [-2.3, 0.25, 1.45],
+      "facing": -1,
+      "color": "#71834d",
+      "accent": "#bc754d",
+      "clip": "wander-idle",
+      "startOffset": 3.4
+    }
+  ]
+}

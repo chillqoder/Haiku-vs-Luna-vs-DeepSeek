@@ -1,0 +1,1 @@
+Optional GLB/GLTF character assets belong in this directory. Reference them from `src/diorama/defaultManifest.ts` with a path such as `/models/characters/guard.glb`. Without an `assetPath`, the local low-poly rig is used.

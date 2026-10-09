@@ -1,0 +1,177 @@
+{
+  "version": 1,
+  "assets": {
+    "characters": {
+      "king": "/models/characters/king.glb",
+      "guard": "/models/characters/guard.glb",
+      "villager": "/models/characters/villager.glb"
+    }
+  },
+  "areas": {
+    "plaza": [
+      [-2.2, 0, 2.0],
+      [1.6, 0, 1.0],
+      [-0.6, 0, 7.2],
+      [2.4, 0, 6.4],
+      [-1.4, 0, 4.8]
+    ]
+  },
+  "patrols": {
+    "gate": {
+      "waypoints": [
+        [-2.6, 1.0, -4.0],
+        [2.6, 1.0, -4.0]
+      ],
+      "walkSeconds": 12,
+      "pauseSeconds": 2
+    },
+    "outer-east": {
+      "waypoints": [
+        [6.4, 0, -8.6],
+        [9.6, 0, -2.6]
+      ],
+      "walkSeconds": 12,
+      "pauseSeconds": 2
+    },
+    "outer-south": {
+      "waypoints": [
+        [9.4, 0, 4.4],
+        [5.0, 0, 9.6]
+      ],
+      "walkSeconds": 12,
+      "pauseSeconds": 2
+    }
+  },
+  "characters": [
+    {
+      "id": "king",
+      "kind": "king",
+      "role": "king",
+      "model": "king",
+      "position": [0, 4.1, -6.45],
+      "yawDeg": 0,
+      "clips": { "loop": "king_observe" }
+    },
+    {
+      "id": "guard-gate",
+      "kind": "guard",
+      "role": "guard",
+      "model": "guard",
+      "patrol": "gate",
+      "startSeconds": 0,
+      "clips": { "walk": "guard_walk", "inspect": "guard_inspect" }
+    },
+    {
+      "id": "guard-east",
+      "kind": "guard",
+      "role": "guard",
+      "model": "guard",
+      "patrol": "outer-east",
+      "startSeconds": 5,
+      "clips": { "walk": "guard_walk", "inspect": "guard_inspect" }
+    },
+    {
+      "id": "guard-south",
+      "kind": "guard",
+      "role": "guard",
+      "model": "guard",
+      "patrol": "outer-south",
+      "startSeconds": 9,
+      "clips": { "walk": "guard_walk", "inspect": "guard_inspect" }
+    },
+    {
+      "id": "lumberjack",
+      "kind": "villager",
+      "role": "lumberjack",
+      "model": "villager",
+      "position": [7.25, 0, 0.2],
+      "yawDeg": 90,
+      "tools": ["Tool_Axe"],
+      "tint": { "Tunic": "#b8642c", "Hat": "#6d4a2c" },
+      "behavior": { "type": "stationary" },
+      "clips": { "loop": "lumberjack_chop" }
+    },
+    {
+      "id": "cook",
+      "kind": "villager",
+      "role": "cook",
+      "model": "villager",
+      "position": [3.3, 0, 1.95],
+      "yawDeg": 0,
+      "tools": ["Tool_Ladle"],
+      "tint": { "Tunic": "#efe9dc", "Hat": "#f7f4ec" },
+      "behavior": { "type": "stationary" },
+      "clips": { "loop": "cook_stir" }
+    },
+    {
+      "id": "fisherman",
+      "kind": "villager",
+      "role": "fisherman",
+      "model": "villager",
+      "position": [-4.4, 0.17, 0.6],
+      "yawDeg": -90,
+      "tools": ["Tool_Rod"],
+      "tint": { "Tunic": "#3f7fbf", "Hat": "#d9b45c" },
+      "behavior": { "type": "stationary" },
+      "ripples": { "anchor": "Bobber", "atSeconds": [1.3, 4.88, 5.63, 6.38] },
+      "clips": { "loop": "fisherman_cast" }
+    },
+    {
+      "id": "child-a",
+      "kind": "villager",
+      "role": "child",
+      "model": "villager",
+      "position": [0, 0, 6.1],
+      "yawDeg": 0,
+      "scale": 0.62,
+      "tint": { "Tunic": "#e0584b", "Hat": "#f0c24b" },
+      "behavior": { "type": "orbit", "center": [0, 0, 4], "radius": 2.1, "lapSeconds": 7 },
+      "clips": { "loop": "villager_run" }
+    },
+    {
+      "id": "child-b",
+      "kind": "villager",
+      "role": "child",
+      "model": "villager",
+      "position": [1.19, 0, 5.73],
+      "yawDeg": 0,
+      "scale": 0.62,
+      "tint": { "Tunic": "#f4c542", "Hat": "#5b3d1f" },
+      "behavior": { "type": "orbit", "center": [0, 0, 4], "radius": 2.1, "lapSeconds": 7 },
+      "clips": { "loop": "villager_run" }
+    },
+    {
+      "id": "villager-1",
+      "kind": "villager",
+      "role": "villager",
+      "model": "villager",
+      "position": [-2.2, 0, 2.0],
+      "yawDeg": 0,
+      "tint": { "Tunic": "#8e5bb5", "Skin": "#e9b78f" },
+      "behavior": { "type": "roam", "area": "plaza", "speed": 0.7, "idleSeconds": [2.0, 4.5] },
+      "clips": { "idle": "villager_idle", "walk": "villager_walk" }
+    },
+    {
+      "id": "villager-2",
+      "kind": "villager",
+      "role": "villager",
+      "model": "villager",
+      "position": [2.4, 0, 6.4],
+      "yawDeg": 0,
+      "tint": { "Tunic": "#4aa36b", "Hat": "#8c5a2b" },
+      "behavior": { "type": "roam", "area": "plaza", "speed": 0.6, "idleSeconds": [1.5, 4.0] },
+      "clips": { "idle": "villager_idle", "walk": "villager_walk" }
+    },
+    {
+      "id": "villager-3",
+      "kind": "villager",
+      "role": "villager",
+      "model": "villager",
+      "position": [1.6, 0, 1.0],
+      "yawDeg": 0,
+      "tint": { "Tunic": "#d9732f", "Hat": "#3b3b3b" },
+      "behavior": { "type": "roam", "area": "plaza", "speed": 0.8, "idleSeconds": [2.5, 5.0] },
+      "clips": { "idle": "villager_idle", "walk": "villager_walk" }
+    }
+  ]
+}

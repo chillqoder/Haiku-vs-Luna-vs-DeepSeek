@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Low-Poly Mage</title>
+<style>
+  html, body { margin: 0; padding: 0; overflow: hidden; background: #0b0713; }
+  canvas { display: block; }
+  #hint {
+    position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
+    color: #8fe9ff; font: 13px/1.4 ui-monospace, Menlo, monospace;
+    letter-spacing: .5px; opacity: .7; pointer-events: none; user-select: none;
+  }
+</style>
+</head>
+<body>
+<div id="hint">click / tap to cast magic</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+const PURPLE = 0x4b1f8a;
+const PURPLE_DARK = 0x2c1155;
+const CYAN = 0x27e6ff;
+const MAGENTA = 0xff4fd8;
+const SKIN = 0xf2c9a0;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b0713);
+scene.fog = new THREE.Fog(0x0b0713, 12, 30);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(4.2, 3.2, 6.2);
+camera.lookAt(0, 1.6, 0);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+// ---------- Lighting ----------
+const hemi = new THREE.HemisphereLight(0x9a7bff, 0x150a2b, 0.55);
+scene.add(hemi);
+
+const key = new THREE.DirectionalLight(0xcfe0ff, 1.5);
+key.position.set(5, 9, 6);
+key.castShadow = true;
+key.shadow.mapSize.set(1024, 1024);
+key.shadow.camera.near = 1;
+key.shadow.camera.far = 30;
+key.shadow.camera.left = -8;
+key.shadow.camera.right = 8;
+key.shadow.camera.top = 8;
+key.shadow.camera.bottom = -8;
+scene.add(key);
+
+const rim = new THREE.DirectionalLight(CYAN, 0.9);
+rim.position.set(-6, 4, -5);
+scene.add(rim);
+
+const glowLight = new THREE.PointLight(CYAN, 0, 8, 2);
+glowLight.position.set(0.9, 2.6, 0.4);
+scene.add(glowLight);
+
+// ---------- Floor ----------
+const floorMat = new THREE.MeshStandardMaterial({ color: 0x1a1030, flatShading: true, roughness: 0.9, metalness: 0.1 });
+const floor = new THREE.Mesh(new THREE.CircleGeometry(14, 8), floorMat);
+floor.rotation.x = -Math.PI / 2;
+floor.receiveShadow = true;
+scene.add(floor);
+
+const platformMat = new THREE.MeshStandardMaterial({ color: 0x3a1e6e, flatShading: true, roughness: 0.7 });
+const platform = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 3.0, 0.4, 8), platformMat);
+platform.position.y = -0.2;
+platform.receiveShadow = true;
+platform.castShadow = true;
+scene.add(platform);
+
+// ---------- Materials ----------
+const matRobe = new THREE.MeshStandardMaterial({ color: PURPLE, flatShading: true, roughness: 0.65, metalness: 0.15 });
+const matRobeDark = new THREE.MeshStandardMaterial({ color: PURPLE_DARK, flatShading: true, roughness: 0.7 });
+const matSkin = new THREE.MeshStandardMaterial({ color: SKIN, flatShading: true, roughness: 0.6 });
+const matHat = new THREE.MeshStandardMaterial({ color: PURPLE_DARK, flatShading: true, roughness: 0.5, metalness: 0.2 });
+const matTrim = new THREE.MeshStandardMaterial({ color: CYAN, flatShading: true, emissive: CYAN, emissiveIntensity: 0.8, roughness: 0.3 });
+const matStaff = new THREE.MeshStandardMaterial({ color: 0x6b4a2b, flatShading: true, roughness: 0.8 });
+const matGem = new THREE.MeshStandardMaterial({ color: CYAN, flatShading: true, emissive: CYAN, emissiveIntensity: 1.4, roughness: 0.2 });
+
+// ---------- Mage ----------
+const mage = new THREE.Group();
+scene.add(mage);
+
+// Robe (cone)
+const robe = new THREE.Mesh(new THREE.ConeGeometry(0.95, 2.0, 8), matRobe);
+robe.position.y = 1.0;
+robe.castShadow = true; robe.receiveShadow = true;
+mage.add(robe);
+
+// Robe trim
+const trim = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.7, 0.12, 8), matTrim);
+trim.position.y = 0.72;
+mage.add(trim);
+
+// Shoulders / upper body
+const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.66, 0.7, 8), matRobeDark);
+torso.position.y = 1.75;
+torso.castShadow = true;
+mage.add(torso);
+
+// Hood collar
+const collar = new THREE.Mesh(new THREE.ConeGeometry(0.62, 0.55, 8), matRobeDark);
+collar.position.y = 2.15;
+mage.add(collar);
+
+// Head
+const head = new THREE.Mesh(new THREE.IcosahedronGeometry(0.34, 1), matSkin);
+head.position.y = 2.45;
+head.castShadow = true;
+mage.add(head);
+
+// Eyes
+for (const sx of [-1, 1]) {
+  const eye = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 8), matGem);
+  eye.position.set(0.12 * sx, 2.5, 0.3);
+  mage.add(eye);
+}
+
+// Hat brim
+const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.72, 0.08, 8), matHat);
+brim.position.y = 2.72;
+brim.castShadow = true;
+mage.add(brim);
+
+// Hat cone (pointed, slightly bent)
+const hat = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.7, 8), matHat);
+hat.position.y = 3.5;
+hat.castShadow = true;
+const hatGroup = new THREE.Group();
+hatGroup.position.y = 2.76;
+hat.position.y = 0.85;
+hatGroup.add(hat);
+hatGroup.rotation.z = -0.18;
+mage.add(hatGroup);
+
+// Hat tip gem
+const hatTip = new THREE.Mesh(new THREE.OctahedronGeometry(0.12, 0), matGem);
+hatTip.position.set(-0.18, 1.72, 0);
+hatGroup.add(hatTip);
+
+// ---- Arms ----
+const armMat = matRobe;
+
+const leftArm = new THREE.Group();
+leftArm.position.set(-0.55, 2.0, 0);
+const leftUpper = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 0.9, 6), armMat);
+leftUpper.position.y = -0.45;
+leftUpper.castShadow = true;
+leftArm.add(leftUpper);
+mage.add(leftArm);
+
+const rightArm = new THREE.Group();
+rightArm.position.set(0.55, 2.0, 0);
+const rightUpper = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 0.9, 6), armMat);
+rightUpper.position.y = -0.45;
+rightUpper.castShadow = true;
+rightArm.add(rightUpper);
+mage.add(rightArm);
+
+// Hand (holding staff)
+const hand = new THREE.Mesh(new THREE.IcosahedronGeometry(0.16, 1), matSkin);
+hand.position.y = -0.95;
+rightArm.add(hand);
+
+// ---- Staff (child of right arm so it follows) ----
+const staff = new THREE.Group();
+staff.position.set(0.0, -0.95, 0.15);
+staff.rotation.z = 0.12;
+rightArm.add(staff);
+
+const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 3.4, 6), matStaff);
+shaft.castShadow = true;
+staff.add(shaft);
+
+const ornament = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.045, 6, 8), matTrim);
+ornament.position.y = 1.75;
+staff.add(ornament);
+
+const orb = new THREE.Mesh(new THREE.OctahedronGeometry(0.28, 0), matGem);
+orb.position.y = 1.75;
+staff.add(orb);
+
+const orbLight = new THREE.PointLight(CYAN, 1.2, 6, 2);
+orbLight.position.copy(orb.position);
+staff.add(orbLight);
+
+// Set arm base poses
+rightArm.rotation.z = -0.25;
+leftArm.rotation.z = 0.2;
+leftArm.rotation.x = 0.15;
+
+// ---------- Particles ----------
+const PARTICLE_COUNT = 260;
+const pGeo = new THREE.BufferGeometry();
+const pPos = new Float32Array(PARTICLE_COUNT * 3);
+const pVel = new Float32Array(PARTICLE_COUNT * 3);
+const pLife = new Float32Array(PARTICLE_COUNT);
+for (let i = 0; i < PARTICLE_COUNT; i++) pLife[i] = -1;
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+
+const pMat = new THREE.PointsMaterial({
+  color: CYAN, size: 0.14, transparent: true, opacity: 0.95,
+  blending: THREE.AdditiveBlending, depthWrite: false,
+});
+const points = new THREE.Points(pGeo, pMat);
+scene.add(points);
+
+let casting = 0;
+let spawnAccum = 0;
+const orbWorld = new THREE.Vector3();
+
+function spawnParticle() {
+  let idx = pLife.indexOf(-1);
+  if (idx === -1) idx = Math.floor(Math.random() * PARTICLE_COUNT);
+  orb.getWorldPosition(orbWorld);
+  const i3 = idx * 3;
+  const spread = 0.12;
+  pPos[i3] = orbWorld.x + (Math.random() - 0.5) * spread;
+  pPos[i3 + 1] = orbWorld.y + (Math.random() - 0.5) * spread;
+  pPos[i3 + 2] = orbWorld.z + (Math.random() - 0.5) * spread;
+  // Burst outward + upward
+  const a = Math.random() * Math.PI * 2;
+  const speed = 1.2 + Math.random() * 2.4;
+  pVel[i3] = Math.cos(a) * speed * 0.6;
+  pVel[i3 + 1] = 0.8 + Math.random() * 2.2;
+  pVel[i3 + 2] = Math.sin(a) * speed * 0.6;
+  pLife[idx] = 0.8 + Math.random() * 0.8;
+}
+
+function updateParticles(dt) {
+  let alive = false;
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    if (pLife[i] <= 0) continue;
+    alive = true;
+    const i3 = i * 3;
+    pLife[i] -= dt;
+    pVel[i3 + 1] -= 3.0 * dt; // gravity
+    pPos[i3] += pVel[i3] * dt;
+    pPos[i3 + 1] += pVel[i3 + 1] * dt;
+    pPos[i3 + 2] += pVel[i3 + 2] * dt;
+    if (pLife[i] <= 0) {
+      pLife[i] = -1;
+      pPos[i3 + 1] = -50; // park offscreen
+    }
+  }
+  pMat.opacity = alive ? 0.95 : 0.0;
+  pGeo.attributes.position.needsUpdate = true;
+}
+
+function castMagic() {
+  casting = 1.0;
+}
+
+renderer.domElement.addEventListener('pointerdown', castMagic);
+window.addEventListener('keydown', (e) => { if (e.code === 'Space') castMagic(); });
+
+// ---------- Resize ----------
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ---------- Animation ----------
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const t = clock.elapsedTime;
+
+  // Idle: breathing
+  const breathe = Math.sin(t * 1.6) * 0.04;
+  mage.scale.y = 1 + breathe;
+  mage.position.y = breathe * 0.15;
+
+  // Subtle sway
+  mage.rotation.z = Math.sin(t * 0.9) * 0.02;
+
+  // Head look
+  head.rotation.y = Math.sin(t * 0.6) * 0.25;
+
+  // Staff / right arm idle movement
+  rightArm.rotation.x = -0.05 + Math.sin(t * 1.2) * 0.06;
+  rightArm.rotation.z = -0.25 + Math.sin(t * 0.8) * 0.05;
+  leftArm.rotation.x = 0.15 + Math.sin(t * 1.4 + 1) * 0.07;
+
+  // Orb pulse
+  const pulse = 1 + Math.sin(t * 3) * 0.08;
+  orb.scale.setScalar(pulse);
+  hatTip.rotation.y = t * 1.5;
+
+  // Casting effect
+  if (casting > 0) {
+    casting = Math.max(0, casting - dt);
+    const surge = 1 - casting;
+    // Raise staff & brighten
+    rightArm.rotation.x += Math.sin(surge * Math.PI) * 0.9;
+    rightArm.rotation.z += Math.sin(surge * Math.PI) * 0.35;
+    const intensity = Math.sin(surge * Math.PI);
+    orb.scale.setScalar(1 + intensity * 1.6);
+    orbLight.intensity = 1.2 + intensity * 6;
+    glowLight.intensity = intensity * 4;
+
+    spawnAccum += dt * 240 * intensity;
+    while (spawnAccum >= 1) { spawnParticle(); spawnAccum -= 1; }
+  } else {
+    orbLight.intensity += (1.2 - orbLight.intensity) * Math.min(dt * 5, 1);
+    glowLight.intensity += (0 - glowLight.intensity) * Math.min(dt * 5, 1);
+  }
+
+  updateParticles(dt);
+
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>

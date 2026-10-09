@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Low-poly Mage</title>
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #12061f; }
+    canvas { display: block; }
+    #hint {
+      position: fixed; left: 16px; bottom: 14px;
+      color: #bff9ff; font: 13px/1.4 system-ui, -apple-system, sans-serif;
+      opacity: .75; pointer-events: none; text-shadow: 0 0 8px #4ff7ff;
+    }
+  </style>
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+  </script>
+</head>
+<body>
+  <div id="hint">Клик или пробел — каст заклинания</div>
+
+  <script type="module">
+    import * as THREE from 'three';
+
+    // Небольшой помощник: случайное число в диапазоне [a, b)
+    const rnd = (a, b) => a + Math.random() * (b - a);
+
+    // ---------- Сцена, камера, рендерер ----------
+    const BG = 0x12061f;
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(BG);
+    scene.fog = new THREE.Fog(BG, 12, 30);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+    document.body.appendChild(renderer.domElement);
+
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+    const LOOK_AT = new THREE.Vector3(0, 2.0, 0);
+
+    function onResize() {
+      const w = window.innerWidth, h = window.innerHeight;
+      renderer.setSize(w, h);
+      camera.aspect = w / h;
+      // На узком экране отодвигаем камеру, чтобы маг целиком умещался по ширине
+      camera.position.set(0, 2.6, Math.max(8.5, 4.6 / camera.aspect));
+      camera.lookAt(LOOK_AT);
+      camera.updateProjectionMatrix();
+    }
+    window.addEventListener('resize', onResize);
+    onResize();
+
+    // ---------- Освещение ----------
+    scene.add(new THREE.HemisphereLight(0xa48cff, 0x1a0b2e, 0.9)); // небо / земля
+    scene.add(new THREE.AmbientLight(0x3a1f66, 0.35));
+
+    const sun = new THREE.DirectionalLight(0xe6deff, 2.2);         // основной свет с тенями
+    sun.position.set(4, 9, 6);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(1024, 1024);
+    Object.assign(sun.shadow.camera, { left: -5, right: 5, top: 6, bottom: -3, near: 1, far: 30 });
+    sun.shadow.camera.updateProjectionMatrix();
+    scene.add(sun);
+
+    const rim = new THREE.DirectionalLight(0x9b5bff, 1.6);         // фиолетовый контровой свет
+    rim.position.set(-6, 5, -6);
+    scene.add(rim);
+
+    // ---------- Материалы (flatShading даёт грани низкополигональной модели) ----------
+    const flat = (color) => new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: 0.75 });
+    const glow = (color, intensity) => new THREE.MeshStandardMaterial({
+      color: new THREE.Color(color).multiplyScalar(0.3), emissive: color,
+      emissiveIntensity: intensity, flatShading: true, roughness: 0.4,
+    });
+
+    const M = {
+      robe:  flat(0x4b1d8f),
+      hat:   flat(0x2a1158),
+      trim:  flat(0x7b3fe4),
+      skin:  flat(0xf0c8ab),
+      beard: flat(0xe9e2ff),
+      wood:  flat(0x5b3a24),
+      glow:  glow(0x4ff7ff, 1.4),
+      eye:   glow(0xd9fdff, 2.5),
+      orb:   new THREE.MeshStandardMaterial({ color: 0xbff9ff, emissive: 0x4ff7ff, emissiveIntensity: 1.6, flatShading: true, roughness: 0.2 }),
+    };
+
+    // Создаёт меш с тенью и сразу добавляет его к родителю
+    function add(parent, geo, mat, pos = [0, 0, 0], rot = [0, 0, 0]) {
+      const m = new THREE.Mesh(geo, mat);
+      m.position.set(...pos);
+      m.rotation.set(...rot);
+      m.castShadow = true;
+      parent.add(m);
+      return m;
+    }
+
+    // Текстура мягкого свечения (для спрайтов и частиц)
+    function makeGlowTexture() {
+      const c = document.createElement('canvas');
+      c.width = c.height = 64;
+      const g = c.getContext('2d');
+      const grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+      grd.addColorStop(0, 'rgba(255,255,255,1)');
+      grd.addColorStop(0.25, 'rgba(255,255,255,0.5)');
+      grd.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = grd;
+      g.fillRect(0, 0, 64, 64);
+      return new THREE.CanvasTexture(c);
+    }
+    const glowTex = makeGlowTexture();
+
+    // ---------- Персонаж (высота ~4.3, ноги на y = 0) ----------
+    const character = new THREE.Group();
+    scene.add(character);
+
+    // Подол — конус; его вершины колышутся волнами (см. animateRobe)
+    const ROBE_H = 2.3, ROBE_R = 0.9;
+    const robeGeo = new THREE.ConeGeometry(ROBE_R, ROBE_H, 8, 5, true);
+    robeGeo.translate(0, ROBE_H / 2, 0);                 // основание стоит на полу
+    const robeBase = robeGeo.attributes.position.array.slice();
+    add(character, robeGeo, M.robe);
+
+    // Верхняя часть тела: дышит, вращается вокруг талии (y = 1.3)
+    const upper = new THREE.Group();
+    upper.position.y = 1.3;
+    character.add(upper);
+
+    const torso = add(upper, new THREE.CylinderGeometry(0.36, 0.44, 1.0, 8), M.robe, [0, 0.5, 0]);
+    add(upper, new THREE.CylinderGeometry(0.43, 0.45, 0.1, 8), M.glow, [0, 0.1, 0]);     // светящийся пояс
+    add(upper, new THREE.SphereGeometry(0.07, 6, 5), M.glow, [0, 0.62, 0.4]);             // эмблема на груди
+    add(upper, new THREE.SphereGeometry(0.2, 8, 6), M.trim, [-0.46, 0.85, 0]);           // наплечники
+    add(upper, new THREE.SphereGeometry(0.2, 8, 6), M.trim, [0.46, 0.85, 0]);
+
+    // Голова
+    const head = new THREE.Group();
+    head.position.set(0, 1.32, 0);
+    upper.add(head);
+    add(head, new THREE.SphereGeometry(0.3, 10, 8), M.skin);
+    add(head, new THREE.SphereGeometry(0.04, 6, 4), M.eye, [-0.1, 0.02, 0.27]);
+    add(head, new THREE.SphereGeometry(0.04, 6, 4), M.eye, [0.1, 0.02, 0.27]);
+    add(head, new THREE.ConeGeometry(0.2, 0.55, 6), M.beard, [0, -0.42, 0.26], [Math.PI, 0, 0]); // борода острием вниз, выступает перед торсом
+
+    // Остроконечная шляпа: поля, конус и светящийся обод
+    const hat = new THREE.Group();
+    hat.position.set(0, 0.26, 0);
+    head.add(hat);
+    add(hat, new THREE.CylinderGeometry(0.52, 0.52, 0.06, 10), M.hat, [0, 0.03, 0]);
+    add(hat, new THREE.ConeGeometry(0.36, 1.4, 7), M.hat, [0, 0.73, 0]);
+    add(hat, new THREE.CylinderGeometry(0.29, 0.29, 0.05, 7), M.glow, [0, 0.33, 0]);
+
+    // Руки: рукав (конус, расширяющийся к запястью) и кисть
+    const ARM_LEN = 0.9;
+    const DOWN = new THREE.Vector3(0, -1, 0);
+
+    function makeArm(x) {
+      const pivot = new THREE.Group();
+      pivot.position.set(x, 0.85, 0);
+      upper.add(pivot);
+      add(pivot, new THREE.CylinderGeometry(0.11, 0.16, ARM_LEN, 6), M.robe, [0, -ARM_LEN / 2, 0]);
+      const hand = add(pivot, new THREE.SphereGeometry(0.1, 8, 6), M.skin, [0, -ARM_LEN, 0]);
+      return { pivot, hand };
+    }
+    const armL = makeArm(-0.46);
+    const armR = makeArm(0.46);
+
+    // Направляет руку от плеча вдоль единичного вектора dir (в системе upper)
+    function aimArm(arm, dir) {
+      arm.pivot.quaternion.setFromUnitVectors(DOWN, dir);
+    }
+
+    // Правая рука держит посох: направление подобрано так, чтобы кисть лежала на оси посоха
+    const RIGHT_DIR = new THREE.Vector3(0.6, -0.745, 0.3).normalize();
+    aimArm(armR, RIGHT_DIR);
+    const grip = new THREE.Vector3(0.46, 0.85, 0).addScaledVector(RIGHT_DIR, ARM_LEN);
+
+    // Посох: опора стоит на полу, качается вокруг неё
+    const staff = new THREE.Group();
+    staff.position.set(grip.x, 0, grip.z);
+    character.add(staff);
+    const STAFF_H = 3.5;
+    add(staff, new THREE.CylinderGeometry(0.035, 0.05, STAFF_H, 6), M.wood, [0, STAFF_H / 2, 0]);
+
+    const orbPivot = new THREE.Group();
+    orbPivot.position.y = STAFF_H;
+    staff.add(orbPivot);
+    const orb = add(orbPivot, new THREE.IcosahedronGeometry(0.16, 0), M.orb);
+    for (let i = 0; i < 3; i++) {                         // три «лапки», держащие кристалл
+      const a = (i / 3) * Math.PI * 2;
+      const claw = add(orbPivot, new THREE.ConeGeometry(0.035, 0.32, 4), M.wood,
+        [Math.cos(a) * 0.13, 0.02, Math.sin(a) * 0.13]);
+      claw.rotation.set(-Math.sin(a) * 0.3, 0, Math.cos(a) * 0.3);
+    }
+
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: glowTex, color: 0x4ff7ff, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false,
+    }));
+    halo.scale.set(1.1, 1.1, 1);
+    orbPivot.add(halo);
+
+    const orbLight = new THREE.PointLight(0x4ff7ff, 3, 7, 2);
+    orbPivot.add(orbLight);
+
+    // Подол колышется волнами: чем ниже вершина, тем сильнее смещение
+    function animateRobe(t) {
+      const p = robeGeo.attributes.position;
+      for (let i = 0; i < p.count; i++) {
+        const x = robeBase[i * 3], y = robeBase[i * 3 + 1], z = robeBase[i * 3 + 2];
+        const h = y / ROBE_H;                             // 0 у пола, 1 у вершины
+        const w = (1 - h) * (1 - h);
+        const a = Math.atan2(z, x);
+        p.setX(i, x + Math.sin(t * 1.6 + a * 2 + h * 3) * 0.07 * w);
+        p.setZ(i, z + Math.cos(t * 1.25 + a * 3 - h * 2) * 0.06 * w);
+      }
+      p.needsUpdate = true;
+    }
+
+    // ---------- Магический круг на полу ----------
+    const circle = new THREE.Group();
+    circle.position.y = 0.05;
+    scene.add(circle);
+
+    const circleMat = new THREE.MeshBasicMaterial({
+      color: 0x4ff7ff, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending,
+      depthWrite: false, side: THREE.DoubleSide,
+    });
+    const innerMat = new THREE.MeshBasicMaterial({
+      color: 0xa85cff, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending,
+      depthWrite: false, side: THREE.DoubleSide,
+    });
+    const outerRing = new THREE.Mesh(new THREE.RingGeometry(1.5, 1.6, 6), circleMat);   // шестиугольник
+    const innerRing = new THREE.Mesh(new THREE.RingGeometry(0.9, 0.94, 48), innerMat);
+    outerRing.rotation.x = -Math.PI / 2;
+    innerRing.rotation.x = -Math.PI / 2;
+    circle.add(outerRing, innerRing);
+
+    const runeGeo = new THREE.BoxGeometry(0.08, 0.01, 0.24);
+    for (let i = 0; i < 6; i++) {                         // руны по кругу
+      const a = (i / 6) * Math.PI * 2;
+      const rune = new THREE.Mesh(runeGeo, circleMat);
+      rune.position.set(Math.cos(a) * 1.22, 0, Math.sin(a) * 1.22);
+      rune.rotation.y = -a;
+      circle.add(rune);
+    }
+
+    // Ударная волна на полу при касте
+    const shock = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 40), new THREE.MeshBasicMaterial({
+      color: 0x4ff7ff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending,
+      depthWrite: false, side: THREE.DoubleSide,
+    }));
+    shock.rotation.x = -Math.PI / 2;
+    shock.position.y = 0.06;
+    scene.add(shock);
+    let shockT = 1;                                       // 1 = волна неактивна
+
+    // ---------- Система частиц (пул + THREE.Points, аддитивное смешение) ----------
+    const MAX_P = 900;
+    const pPos = new Float32Array(MAX_P * 3);
+    const pCol = new Float32Array(MAX_P * 3);
+    const posAttr = new THREE.BufferAttribute(pPos, 3).setUsage(THREE.DynamicDrawUsage);
+    const colAttr = new THREE.BufferAttribute(pCol, 3).setUsage(THREE.DynamicDrawUsage);
+    const pGeo = new THREE.BufferGeometry();
+    pGeo.setAttribute('position', posAttr);
+    pGeo.setAttribute('color', colAttr);
+    const pMat = new THREE.PointsMaterial({
+      size: 0.16, map: glowTex, vertexColors: true, transparent: true,
+      depthWrite: false, blending: THREE.AdditiveBlending,
+    });
+    scene.add(new THREE.Points(pGeo, pMat));
+
+    const pool = Array.from({ length: MAX_P }, () => ({
+      life: 0, age: 0, swirl: 0, pos: new THREE.Vector3(), vel: new THREE.Vector3(), color: new THREE.Color(),
+    }));
+    let poolIdx = 0;
+    const PALETTE = [0x4ff7ff, 0x9ffcff, 0xa85cff, 0xd27bff, 0xffffff].map((c) => new THREE.Color(c));
+
+    function spawnParticle(pos, vel, life, swirl) {
+      const p = pool[poolIdx];                            // перезаписываем самый старый слот
+      poolIdx = (poolIdx + 1) % MAX_P;
+      p.pos.copy(pos);
+      p.vel.copy(vel);
+      p.life = life;
+      p.age = 0;
+      p.swirl = swirl;
+      p.color.copy(PALETTE[(Math.random() * PALETTE.length) | 0]);
+    }
+
+    function updateParticles(dt) {
+      for (let i = 0; i < MAX_P; i++) {
+        const p = pool[i];
+        if (p.life > 0) p.age += dt;
+        if (p.age >= p.life) p.life = 0;
+
+        if (p.life > 0) {
+          // Закручиваем поток вокруг вертикали и даём лёгкую плавучесть
+          const a = p.swirl * dt, c = Math.cos(a), s = Math.sin(a);
+          const vx = p.vel.x * c - p.vel.z * s;
+          p.vel.z = p.vel.x * s + p.vel.z * c;
+          p.vel.x = vx;
+          p.vel.multiplyScalar(Math.exp(-1.2 * dt));
+          p.vel.y += 0.3 * dt;
+          p.pos.addScaledVector(p.vel, dt);
+
+          const k = 1 - p.age / p.life;                   // яркость гаснет к концу жизни
+          pPos[i * 3] = p.pos.x; pPos[i * 3 + 1] = p.pos.y; pPos[i * 3 + 2] = p.pos.z;
+          pCol[i * 3] = p.color.r * k; pCol[i * 3 + 1] = p.color.g * k; pCol[i * 3 + 2] = p.color.b * k;
+        } else {
+          pCol[i * 3] = 0; pCol[i * 3 + 1] = 0; pCol[i * 3 + 2] = 0;
+        }
+      }
+      posAttr.needsUpdate = true;
+      colAttr.needsUpdate = true;
+    }
+
+    const orbPos = new THREE.Vector3();
+    const handPos = new THREE.Vector3();
+    const tmpPos = new THREE.Vector3();
+    const tmpVel = new THREE.Vector3();
+    let orbAcc = 0, handAcc = 0;
+
+    // Искра из точки origin: поднимается вверх и закручивается
+    function sparkAt(origin, scatter) {
+      tmpPos.set(origin.x + rnd(-scatter, scatter), origin.y + rnd(-scatter, scatter), origin.z + rnd(-scatter, scatter));
+      tmpVel.set(rnd(-0.3, 0.3), rnd(0.6, 1.4), rnd(-0.3, 0.3));
+      spawnParticle(tmpPos, tmpVel, rnd(0.9, 1.7), rnd(-4, 4));
+    }
+
+    // Взрыв при касте: частицы разлетаются из кристалла во все стороны
+    function burst(origin, count) {
+      for (let i = 0; i < count; i++) {
+        tmpPos.copy(origin);
+        tmpVel.set(rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)).normalize().multiplyScalar(rnd(1.5, 3.5));
+        spawnParticle(tmpPos, tmpVel, rnd(0.7, 1.4), rnd(-2, 2));
+      }
+    }
+
+    // ---------- Пол: низкополигональный рельеф, цвет на каждую грань ----------
+    const floorGeo = new THREE.PlaneGeometry(30, 30, 18, 18);
+    floorGeo.rotateX(-Math.PI / 2);
+    const fp = floorGeo.attributes.position;
+    for (let i = 0; i < fp.count; i++) fp.setY(i, rnd(-0.03, 0.03));
+    const flatFloor = floorGeo.toNonIndexed();
+    const floorCount = flatFloor.attributes.position.count;
+    const floorColors = new Float32Array(floorCount * 3);
+    const FLOOR_PALETTE = [0x2a1652, 0x34195f, 0x3e1d6e, 0x2b1a4f].map((c) => new THREE.Color(c));
+    for (let v = 0; v < floorCount; v += 3) {             // все три вершины треугольника — один цвет
+      const c = FLOOR_PALETTE[(Math.random() * FLOOR_PALETTE.length) | 0];
+      for (let k = 0; k < 3; k++) floorColors.set([c.r, c.g, c.b], (v + k) * 3);
+    }
+    flatFloor.setAttribute('color', new THREE.BufferAttribute(floorColors, 3));
+    const floor = new THREE.Mesh(flatFloor, new THREE.MeshStandardMaterial({
+      vertexColors: true, flatShading: true, roughness: 0.9,
+    }));
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    // ---------- Звёзды над горизонтом ----------
+    const starPos = new Float32Array(300 * 3);
+    for (let i = 0; i < 300; i++) {
+      const r = rnd(35, 55), th = rnd(0, Math.PI * 2), ph = rnd(0.15, 1.45);
+      starPos.set([r * Math.sin(ph) * Math.cos(th), r * Math.cos(ph), r * Math.sin(ph) * Math.sin(th)], i * 3);
+    }
+    const starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({
+      color: 0xcfe9ff, size: 0.18, sizeAttenuation: true, transparent: true, opacity: 0.7,
+      fog: false, depthWrite: false,
+    })));
+
+    // ---------- Каст: клик / пробел, плюс автокаст каждые 9 с ----------
+    const CAST_DUR = 2.6;          // длительность каста, с
+    let castT = CAST_DUR;          // время с начала каста; >= CAST_DUR — каст неактивен
+    let castK = 0;                 // плавная интенсивность каста 0..1
+    let burstDone = true;
+    let autoIn = 4;                // секунд до автокаста
+    function triggerCast() {
+      castT = 0;
+      burstDone = false;
+      autoIn = 9;
+    }
+    window.addEventListener('pointerdown', triggerCast);
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && !e.repeat) {
+        e.preventDefault();
+        triggerCast();
+      }
+    });
+
+    // ---------- Анимация ----------
+    const LEFT_IDLE = new THREE.Vector3(-0.3, -0.93, 0.25).normalize();   // левая рука свободно висит
+    const LEFT_CAST = new THREE.Vector3(-0.25, 0.7, 0.75).normalize();    // и поднимается при касте
+    const leftDir = new THREE.Vector3();
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(clock.getDelta(), 0.05);
+      const t = clock.elapsedTime;
+
+      // --- Таймлайн каста ---
+      autoIn -= dt;
+      if (autoIn <= 0) triggerCast();
+      if (castT < CAST_DUR) castT += dt;
+      const env = castT < CAST_DUR
+        ? Math.min(1, castT / 0.6) * (1 - THREE.MathUtils.smoothstep(castT, 1.6, CAST_DUR))
+        : 0;
+      castK += (env - castK) * (1 - Math.exp(-dt * 8));
+
+      // Вспышка и ударная волна в середине каста
+      if (!burstDone && castT >= 0.5) {
+        burstDone = true;
+        orb.getWorldPosition(orbPos);
+        burst(orbPos, 120);
+        shockT = 0;
+      }
+      if (shockT < 1) {
+        shockT = Math.min(1, shockT + dt / 1.1);
+        shock.scale.setScalar(0.5 + shockT * 4.5);
+        shock.material.opacity = (1 - shockT) * 0.8;
+      }
+
+      // --- Idle: дыхание, покачивание головы, лёгкое парение ---
+      const breath = Math.sin(t * 1.7);
+      upper.position.y = 1.3 + breath * 0.022;
+      torso.scale.set(1 + breath * 0.02, 1 + breath * 0.012, 1 + breath * 0.02);
+      character.position.y = castK * 0.35 + Math.sin(t * 1.2) * 0.02;
+
+      head.rotation.set(-castK * 0.15, Math.sin(t * 0.45) * 0.18, 0);   // при касте взгляд вверх
+      hat.rotation.set(Math.sin(t * 0.9) * 0.03, 0, -0.12 + Math.sin(t * 1.3) * 0.05);
+
+      animateRobe(t);
+
+      // Левая рука: идёт от покоя к жесту каста с лёгким покачиванием
+      leftDir.copy(LEFT_IDLE).lerp(LEFT_CAST, castK);
+      leftDir.x += Math.sin(t * 0.9) * 0.03;
+      leftDir.normalize();
+      aimArm(armL, leftDir);
+
+      // Посох: покачивание, при касте наклоняется
+      staff.rotation.set(Math.sin(t * 0.7 + 1.3) * 0.02, 0, Math.sin(t * 0.9) * 0.03 - castK * 0.04);
+      orbPivot.position.y = STAFF_H + Math.sin(t * 2) * 0.03;
+      orb.rotation.set(t * 0.5, t * 0.8, 0);
+      M.orb.emissiveIntensity = 1.6 + castK * 3;
+      halo.material.opacity = 0.7 + castK * 0.3;
+      halo.scale.setScalar(1.1 + castK * 0.5);
+      orbLight.intensity = 3 + castK * 6;
+
+      // Магический круг вращается и разгорается
+      circle.rotation.y += dt * (0.3 + castK * 1.2);
+      circleMat.opacity = 0.45 + castK * 0.45;
+
+      // --- Частицы: слабое мерцание в покое, мощный поток при касте ---
+      orb.getWorldPosition(orbPos);
+      armL.hand.getWorldPosition(handPos);
+      orbAcc += (4 + castK * 180) * dt;
+      while (orbAcc >= 1) { orbAcc -= 1; sparkAt(orbPos, 0.08); }
+      handAcc += castK * 80 * dt;
+      while (handAcc >= 1) { handAcc -= 1; sparkAt(handPos, 0.05); }
+      updateParticles(dt);
+
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>

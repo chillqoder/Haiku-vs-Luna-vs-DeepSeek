@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#101523" />
+    <meta name="description" content="A neon-lit side-scrolling brawler. Three districts. One last stand." />
+    <title>Neon Street Guardians</title>
+  </head>
+  <body>
+    <main id="game" aria-label="Neon Street Guardians game">
+      <canvas id="game-canvas"></canvas>
+      <div class="scanlines" aria-hidden="true"></div>
+
+      <header class="hud" id="hud" aria-live="polite">
+        <div class="hero-panel panel">
+          <div class="identity"><span class="hero-mark">✦</span><div><small>PLAYER ONE</small><strong>RHEA</strong></div></div>
+          <div class="health-track"><div id="hero-health" class="health-fill hero-health"></div></div>
+          <div class="hero-meta"><span id="hero-health-label">120 / 120</span><span id="lives">♥ ♥ ♥</span></div>
+        </div>
+        <div class="center-panel">
+          <div class="stage-label"><span id="stage-number">DISTRICT 01</span><strong id="stage-name">THE RAINLINE</strong></div>
+          <div class="score-label">SCORE <strong id="score">000000</strong></div>
+          <div class="combo-label" id="combo-label"> <strong id="combo-count">0</strong><span>HIT COMBO</span></div>
+        </div>
+        <div class="boss-panel panel hidden" id="boss-panel">
+          <div class="boss-meta"><small>AREA THREAT</small><strong id="boss-name">THE ENFORCER</strong></div>
+          <div class="health-track"><div id="boss-health" class="health-fill boss-health"></div></div>
+        </div>
+        <button class="pause-button" id="pause-button" aria-label="Pause game">Ⅱ</button>
+      </header>
+
+      <div class="toast" id="toast" role="status"></div>
+
+      <section class="overlay" id="overlay">
+        <article class="screen active" data-screen="menu">
+          <div class="title-kicker"><span></span> AN ORIGINAL ARCADE BRAWLER <span></span></div>
+          <h1>NEON STREET<br /><em>GUARDIANS</em></h1>
+          <p class="intro-copy">Three districts are under siege. Fight your way through the crews and face the force behind it all.</p>
+          <button class="primary-button" id="start-button">START RUN <span>→</span></button>
+          <div class="control-card">
+            <div><b>MOVE</b><span>WASD / ARROWS</span></div><div><b>JUMP</b><span>SPACE</span></div><div><b>FIGHT</b><span>J PUNCH · K KICK</span></div><div><b>SPECIAL</b><span>L</span></div><div><b>GRAB / THROW</b><span>E</span></div>
+          </div>
+          <p class="small-note">Sound effects only · Headphones recommended</p>
+        </article>
+        <article class="screen" data-screen="paused">
+          <div class="title-kicker"><span></span> TAKE A BREATHER <span></span></div><h2>PAUSED</h2>
+          <button class="primary-button" id="resume-button">BACK TO THE FIGHT <span>→</span></button>
+          <button class="text-button" id="pause-restart">RESTART RUN</button>
+        </article>
+        <article class="screen" data-screen="gameover">
+          <div class="title-kicker"><span></span> RUN ENDED <span></span></div><h2>THE STREETS<br /><em>GO QUIET</em></h2><p class="intro-copy">The crews still own the night. Take another run at them.</p>
+          <button class="primary-button" id="retry-button">TRY AGAIN <span>→</span></button>
+        </article>
+        <article class="screen" data-screen="victory">
+          <div class="title-kicker"><span></span> DISTRICTS LIBERATED <span></span></div><h2>THE CITY<br /><em>BREATHES</em></h2><p class="intro-copy">You pushed the last crew out and brought the lights back.</p>
+          <div class="final-score">FINAL SCORE <strong id="final-score">000000</strong></div>
+          <button class="primary-button" id="victory-restart">PLAY AGAIN <span>→</span></button>
+        </article>
+      </section>
+
+      <div class="mobile-controls" aria-label="Touch controls">
+        <div class="move-pad"><button data-action="left" aria-label="Move left">◀</button><div><button data-action="up" aria-label="Move up lane">▲</button><button data-action="down" aria-label="Move down lane">▼</button></div><button data-action="right" aria-label="Move right">▶</button></div>
+        <div class="action-pad"><button class="action-jump" data-action="jump">JUMP</button><button class="action-punch" data-action="punch">PUNCH</button><button class="action-kick" data-action="kick">KICK</button><button class="action-special" data-action="special">SPIN</button><button class="action-grab" data-action="grab">GRAB</button></div>
+      </div>
+      <footer class="bottom-hint" id="bottom-hint">CLEAR THE BLOCK · KEEP MOVING RIGHT</footer>
+    </main>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
